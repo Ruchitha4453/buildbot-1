@@ -9,10 +9,10 @@ type Message = {
 
 interface ChatProps {
   activeFile: string | null;
-  getFileExplanation: () => string; // Function to get explanation
+  fileContent: string|null;// Function to get explanation
 }
 
-export const Chat: React.FC<ChatProps> = ({ activeFile, getFileExplanation }) => {
+export const Chat: React.FC<ChatProps> = ({ activeFile, fileContent }) => {
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: 'Hello! How can I assist you today?' },
   ]);
@@ -29,53 +29,73 @@ export const Chat: React.FC<ChatProps> = ({ activeFile, getFileExplanation }) =>
     }
   };
 
-  // Function to send messages to AI
   const sendMessage = async (messageContent: string) => {
     const newUserMessage: Message = { role: 'user', content: messageContent };
-    setMessages(prevMessages => [...prevMessages, newUserMessage]);
+    setMessages((prevMessages) => [...prevMessages, newUserMessage]);
     setInput('');
-
+  
     // Set loading state
     setLoading(true);
-
+  
     try {
       // Check if the message contains "explain" and there is an active file
-      if (/explain/i.test(messageContent) && activeFile) {
-        const explanation = getFileExplanation(); // Get explanation for the active file
-        const aiResponse: Message = { 
-          role: 'assistant', 
-          content: explanation 
+      if (/explain/i.test(messageContent) && activeFile && fileContent) {
+        // Send file content to Together AI for explanation
+        const response = await together.chat.completions.create({
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an assistant that explains file content in detail. Provide a clear and concise explanation of the following file.',
+            },
+            {
+              role: 'user',
+              content: `Here is the content of the file "${activeFile}":\n\n${fileContent}`,
+            },
+          ],
+          model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+        });
+  
+        const explanation =
+          response.choices?.[0]?.message?.content ||
+          'Sorry, I could not provide an explanation for the file.';
+  
+        const aiResponse: Message = {
+          role: 'assistant',
+          content: explanation,
         };
-        setMessages(prevMessages => [...prevMessages, aiResponse]);
+  
+        setMessages((prevMessages) => [...prevMessages, aiResponse]);
       } else {
-        // Call Together AI API for normal conversation
+        // Handle general conversation using Together AI
         const response = await together.chat.completions.create({
           messages: [{ role: 'user', content: messageContent }],
-          model: "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+          model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
         });
-
+  
         const aiResponseContent =
           response.choices?.[0]?.message?.content || "Sorry, I didn't understand that.";
-
-        const aiResponse: Message = { 
-          role: 'assistant', 
-          content: aiResponseContent 
+  
+        const aiResponse: Message = {
+          role: 'assistant',
+          content: aiResponseContent,
         };
-        
-        setMessages(prevMessages => [...prevMessages, aiResponse]);
+  
+        setMessages((prevMessages) => [...prevMessages, aiResponse]);
       }
     } catch (error) {
       console.error('Error fetching AI response:', error);
-      const errorMessage: Message = { 
-        role: 'assistant', 
-        content: 'Sorry, there was an error processing your request.' 
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: 'Sorry, there was an error processing your request.',
       };
-      setMessages(prevMessages => [...prevMessages, errorMessage]);
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
     } finally {
       // Reset loading state
       setLoading(false);
     }
   };
+  
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

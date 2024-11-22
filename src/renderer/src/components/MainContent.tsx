@@ -28,14 +28,42 @@ export default function MainContent() {
   };
 
   // Function to generate explanation about the active file
-  const generateFileExplanation = () => {
-    if (!activeFile) return '';
-
+  const generateFileExplanation = async () => {
+    if (!activeFile) return 'No file is currently selected.';
+  
     const lines = fileContent.split('\n').length; // Count number of lines
     const fileType = activeFile.split('.').pop(); // Get file type from path
-
-    return `The selected file "${activeFile}" is of type "${fileType}". It contains ${lines} lines of code.`;
+  
+    // Send the file content to an AI API for analysis (assuming OpenAI or another AI service)
+    try {
+      const response = await fetch('https://api.together.ai/v1/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer 1ae8c0c5faa05c67cca43dae81dbf4be7f10845ea4c4b00a0e966751e4e710d3`, // Replace with your Together AI API key
+        },
+        body: JSON.stringify({
+          prompt: `Provide a detailed summary of the following code content:\n${fileContent}`,
+          model: 'text-davinci-003', // Replace with the relevant Together AI or OpenAI model
+        }),
+      });
+  
+      const aiResponse = await response.json();
+  
+      if (!response.ok || !aiResponse) {
+        throw new Error('Failed to fetch AI explanation');
+      }
+  
+      const aiExplanation = aiResponse.choices[0]?.text?.trim() || 'No detailed explanation available.';
+  
+      return `The selected file "${activeFile}" is of type "${fileType}" and contains ${lines} lines of code.\n\nAI Explanation:\n${aiExplanation}`;
+    } catch (error) {
+      console.error('Error fetching AI explanation:', error);
+      return `The selected file "${activeFile}" is of type "${fileType}" and contains ${lines} lines of code. Could not fetch a detailed explanation due to an error.`;
+    }
   };
+  
+    
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -66,7 +94,7 @@ export default function MainContent() {
           </div>
           <Chat 
             activeFile={activeFile} 
-            getFileExplanation={generateFileExplanation} 
+            fileContent={fileContent} 
           />
         </main>
       </div>
