@@ -59,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ files, onFileSelect, className
             className="flex items-center cursor-pointer hover:bg-gray-700 p-1 rounded"
             onClick={() => {
               // Fetch actual file content from the server
-              fetch(`http://192.168.137.113:5000/${currentPath}`)
+              fetch(`http://localhost:9000/${currentPath}`)
                 .then((response) => response.text()) // Assuming the response is plain text
                 .then((content) => {
                   onFileSelect(currentPath, content); // Pass both path and content
