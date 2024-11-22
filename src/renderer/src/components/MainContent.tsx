@@ -12,10 +12,11 @@ export default function MainContent() {
   const [folderStructure, setFolderStructure] = useState<FileNode[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('');
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
 
   // Fetch folder structure from the server
   useEffect(() => {
-    fetch('http://192.168.137.113:5000/files')
+    fetch('http://localhost:9000/files')
       .then((response) => response.json())
       .then((data) => setFolderStructure(data))
       .catch((err) => console.error('Error fetching folder structure:', err));
@@ -68,21 +69,24 @@ export default function MainContent() {
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Sidebar Component */}
-      <div className="w-64 flex-shrink-0 overflow-auto">
-        <Sidebar
-          files={folderStructure}
-          onFileSelect={handleFileSelect}
-          className="bg-gray-800"
-        />
+      <div className="w-64 flex-shrink-0 overflow-auto fixed top-0 left-0 h-screen bg-gray-800">
+        <Sidebar files={folderStructure} onFileSelect={handleFileSelect} />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-gray-800 p-4">
+      <div className="flex-1 ml-64 flex flex-col overflow-hidden">
+        <header className="bg-gray-800 p-4 fixed top-0 left-64 right-0 z-10 flex items-center justify-between">
           <h1 className="text-xl font-bold">BuildBot.AI</h1>
+          <button
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => setIsChatOpen((prev) => !prev)}
+          >
+            {isChatOpen ? 'Close Chat' : 'Open Chat'}
+          </button>
         </header>
-        <main className="flex-1 p-4 bg-gray-700 overflow-auto flex">
-          <div className="flex-1">
+
+        <main className="flex-1 mt-16 p-4 bg-gray-700 flex">
+          <div className={`flex-1 overflow-auto ${isChatOpen ? 'mr-80' : ''}`}>
             {activeFile ? (
               <div>
                 <h2 className="text-lg font-bold mb-2">Editing: {activeFile}</h2>
